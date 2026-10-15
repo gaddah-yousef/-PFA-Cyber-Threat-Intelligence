@@ -36,7 +36,7 @@ d'environnement ne sont pas configurées.
 - [x] Vérifier PostgreSQL dans la CI et ajouter Redis/RQ.
 - [x] Ajouter une configuration de déploiement production reproductible.
 - [x] Initialiser Git localement sans publier de secret.
-- [ ] Publier Git et activer GitHub Actions (authentification et dépôt distant requis).
+- [x] Publier Git sur `gaddah-yousef/-PFA-Cyber-Threat-Intelligence` et activer GitHub Actions.
 
 ### Phase E — Livraison
 
@@ -47,7 +47,7 @@ d'environnement ne sont pas configurées.
 
 ## Limites externes
 
-- L'activation GitHub Actions exige l'URL d'un dépôt GitHub et une authentification utilisateur.
+- Le premier workflow distant `CI DevSecOps` est activé, mais son exécution du 15 octobre 2026 doit encore être corrigée (échec GitHub Actions, alors que les validations locales passent).
 - Le déploiement public exige le choix et l'accès à une plateforme cible.
 - Les canaux SMTP, Slack, Telegram, Wazuh, Elastic et MISP exigent leurs URLs ou secrets réels.
 
@@ -87,31 +87,29 @@ Faire évoluer Sentinel PME d'un simple tableau de bord de Threat Intelligence v
 
 ### Checkpoint: Dashboard
 
-- [ ] Build frontend passe — à vérifier localement (`npm run build`), voir note de validation ci-dessous
+- [x] Build frontend validé localement (`npm run build`, 1 667 modules transformés).
 - [x] Le flux analyste fonctionne : voir, traiter (statut/assignation/notes), exporter (SIEM JSON)
 
 ### Phase 3: Integrations avancées
 
 - [x] Task 7: Ajouter une configuration webhook SIEM optionnelle (`WEBHOOK_URL`/`WEBHOOK_SECRET`, signature HMAC)
-- [~] Task 8: Préparer un exemple d'intégration Wazuh/Elastic/Splunk — documenté dans `docs/08-integration-soc-siem.md` (comment relayer l'export JSON vers chacun) ; pas encore de connecteur de code dédié à un outil précis
-- [ ] Task 9: Ajouter des playbooks SOC enrichis à partir des fiches réflexes — reste à faire
+- [x] Task 8: Intégrer Wazuh et Elastic — formats JSON dédiés, endpoints d'export et connecteurs push optionnels ; Splunk reste pris en charge via le webhook générique documenté.
+- [x] Task 9: Enrichir les playbooks SOC — procédures chronologiques, preuves à préserver, critères d'escalade et références intégrés aux fiches réflexes.
 
 ### Checkpoint: Complete
 
-- [~] Tests backend et frontend passent — tests backend écrits et revus (ruff : aucun nom non défini) ; non exécutés dans cette session, voir note de validation
+- [x] Tests backend et frontend validés localement : 60 tests backend et 17 tests frontend réussis.
 - [x] Documentation de démonstration prête (`docs/08-integration-soc-siem.md`, README mis à jour)
 - [x] Projet présentable comme MVP entreprise (workflow SOC, export SIEM, audit, scoring explicable)
 
-### Note de validation (importante)
+### Validation locale — 15 octobre 2026
 
-Cette itération a été développée et revue avec soin (relecture ligne à ligne,
-`ruff check` sans erreur sur tout le backend, vérification de syntaxe
-TypeScript sur les fichiers modifiés), mais **`pytest`, `npm run test` et
-`npm run build` n'ont pas pu être exécutés depuis cette session** : le bac à
-sable cloud n'a pas accès à PyPI/npm pour installer les dépendances, et la
-liaison avec l'ordinateur ne permet pas de taper des commandes dans un
-terminal. Lance ces trois commandes en local (`pytest -q`, `npm run test --
---run`, `npm run build`) et signale tout échec pour correction immédiate.
+- `pytest -q` : 60 tests réussis.
+- `npm run test -- --run` : 10 fichiers et 17 tests réussis.
+- `npm run lint` : aucune erreur ESLint.
+- `npm run build` : build TypeScript/Vite réussi, 1 667 modules transformés.
+- Migration Alembic vérifiée jusqu'à la révision `d4f6027a9b31` sur une base vierge.
+- Workflow d'alerte email validé avec une menace critique de score 97/100.
 
 ## Extension Sentinel PME 2.0 — Phase 1
 
@@ -142,8 +140,8 @@ terminal. Lance ces trois commandes en local (`pytest -q`, `npm run test --
 | Complexifier l'interface trop tôt | Medium | Backend SOC/SIEM d'abord, UI ensuite |
 | Dépendre d'un SIEM externe absent | Medium | Commencer par un export JSON local/testable |
 
-## Open Questions
+## Décisions actées
 
-- Choix SIEM prioritaire pour la démonstration finale : Wazuh, Elastic, Splunk ou Microsoft Sentinel ?
-- Souhaites-tu une vraie authentification analyste/admin dans la démo finale ou garder un mode simplifié ?
-- Souhaites-tu intégrer les notifications email avant ou après la page SOC ?
+- Wazuh et Elastic disposent de formats et connecteurs optionnels dédiés ; les autres SIEM peuvent utiliser le webhook HMAC générique.
+- L'authentification avec rôles `admin`, `analyst` et `viewer` est implémentée dans l'API et le frontend.
+- Les notifications email, Slack et Telegram sont intégrées après le workflow SOC et restent configurables par variables d'environnement.
