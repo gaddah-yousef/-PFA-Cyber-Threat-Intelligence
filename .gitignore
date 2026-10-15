@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Bases locales et secrets
+*.db
+*.sqlite3
+.env
+!.env.example
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE et système
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Artefacts locaux non versionnés
+tmp/
+tailscale-setup-*.exe
+tightvnc-*-setup-*.msi
+backups/
+.playwright-cli/

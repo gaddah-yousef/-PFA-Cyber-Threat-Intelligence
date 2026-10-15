@@ -1,0 +1,109 @@
+name: sentinel-pme
+
+x-backend-environment: &backend-environment
+  ENVIRONMENT: production
+  DATABASE_URL: postgresql+psycopg://sentinel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}@postgres:5432/sentinel
+  REDIS_URL: redis://redis:6379/0
+  CORS_ORIGINS: ${PUBLIC_ORIGIN:?PUBLIC_ORIGIN requis}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY requis}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL requis}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD requis}
+  NVD_API_KEY: ${NVD_API_KEY:-}
+  OTX_API_KEY: ${OTX_API_KEY:-}
+  ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY:-}
+  URLHAUS_AUTH_KEY: ${URLHAUS_AUTH_KEY:-}
+  WEBHOOK_URL: ${WEBHOOK_URL:-}
+  WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+  SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+  WAZUH_WEBHOOK_URL: ${WAZUH_WEBHOOK_URL:-}
+  WAZUH_TOKEN: ${WAZUH_TOKEN:-}
+  ELASTIC_SIEM_URL: ${ELASTIC_SIEM_URL:-}
+  ELASTIC_API_KEY: ${ELASTIC_API_KEY:-}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-}
+  ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sentinel
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel -d sentinel"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: ["rq", "worker", "sentinel-collectors", "--url", "redis://redis:6379/0"]
+    environment: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
