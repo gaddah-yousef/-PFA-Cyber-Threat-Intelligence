@@ -57,4 +57,25 @@ describe('Login', () => {
       expect(client.login).toHaveBeenCalledWith('admin@pme-cyber.local', 'ChangeMe123!'),
     )
   })
+
+  it('permet de parcourir les trois scènes de cybersécurité', async () => {
+    const { container } = render(
+      <MemoryRouter>
+        <AuthProvider>
+          <Login />
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    expect(container.querySelectorAll('[data-login-scene]')).toHaveLength(3)
+    expect(screen.getByRole('button', { name: /mettre le diaporama en pause/i })).toBeInTheDocument()
+
+    const identityScene = screen.getByRole('button', {
+      name: /afficher la scène protection des identités/i,
+    })
+    await userEvent.click(identityScene)
+
+    expect(identityScene).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText(/protéger chaque accès sensible/i)).toBeInTheDocument()
+  })
 })
